@@ -1,0 +1,67 @@
+#!/bin/sh
+# Jabber GaduGadu transport
+#
+# chkconfig:	345 85 05
+# description:	Jabber GaduGadu transport
+
+# Source function library
+. /etc/rc.d/init.d/functions
+
+# Get network config
+. /etc/sysconfig/network
+
+# Get service config
+[ -f /etc/sysconfig/jggtrans ] && . /etc/sysconfig/jggtrans
+
+# Check that networking is up.
+#if is_yes "${NETWORKING}"; then
+prog="JGGtrans"
+if [ "${NETWORKING}" = "yes" ];then
+	if [ ! -f /var/lock/subsys/network -a "$1" != stop -a "$1" != status ]; then
+		exit 1
+	fi
+else
+	exit 0
+fi
+
+RETVAL=0
+# See how we were called.
+case "$1" in
+  start)
+	# Check if the service is already running?
+	if [ ! -f /var/lock/subsys/jggtrans ]; then
+        	echo -n $"Starting $prog: "
+		daemon jggtrans -u ejabberd $JGGTRANS_FLAGS
+		RETVAL=$?
+		[ $RETVAL -eq 0 ] && touch /var/lock/subsys/jggtrans
+		echo
+	else
+		echo
+	fi
+	;;
+  stop)
+	# Check if the service is already running?
+	if [ -f /var/lock/subsys/jggtrans ]; then
+		echo -n $"Stopping $prog: "
+		killproc jggtrans
+		rm -f /var/lock/subsys/jggtrans
+		echo
+	else
+		echo
+	fi
+	;;
+  restart|force-reload)
+	$0 stop
+	$0 start
+	exit $?
+	;;
+  status)
+	status jggtrans
+	exit $?
+	;;
+  *)
+	echo -n "$0 {start|stop|restart|force-reload|status}"
+	exit 3
+esac
+
+exit $RETVAL
